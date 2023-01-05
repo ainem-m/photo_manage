@@ -22,6 +22,8 @@ def resize(img: cv2.Mat, size: int = 1024, debug: bool = False) -> cv2.Mat:
 
 def decode(path: pathlib.Path, debug=False) -> Optional[str]:
     img = cv2.imread(str(path))
+    if img is None:
+        return None
     # 画像サイズが大きいと読み取りがうまく行かないので
     # アスペクト比を保ったまま長辺が1024になるように縮小
     img = resize(img, debug=debug)
