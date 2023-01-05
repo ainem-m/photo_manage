@@ -18,7 +18,7 @@ STR_TARGET_DIR: str = "/Users/ainem/Desktop/python/photo_manage/sample2/"
 
 
 def get_date(path: Path) -> datetime:
-    return datetime.fromtimestamp(path.stat().st_atime)
+    return datetime.fromtimestamp(path.stat().st_mtime)
 
 
 def date_to_str(date: datetime) -> str:
@@ -45,7 +45,7 @@ def main():
     current_time = sorted_filelist[0][1]
     target_dir: str = TARGET_DIR
     current_day: datetime.day = current_time.day
-    cnt: int = 0
+    file_number: int = 0
 
     for i, (path, date) in enumerate(sorted_filelist):
         folder_name: Optional[str] = decode.decode(path)
@@ -56,33 +56,35 @@ def main():
                 target_dir = TARGET_DIR / folder_name
                 # QRCodeの画像は避難
                 qr_path: Path = TARGET_DIR / "qr" / \
-                    f"{date_to_str(date)}-{cnt:02d}.jpg"
+                    f"{date_to_str(date)}-{file_number:02d}.jpg"
                 while qr_path.exists():
                     print(
                         f"you may run this program twice: \n{qr_path} is already exists", file=sys.stderr)
-                    cnt += 1
+                    file_number += 1
                     qr_path = qr_path.parent / \
-                        f"{date_to_str(date)}-{cnt:02d}.jpg"
+                        f"{date_to_str(date)}-{file_number:02d}.jpg"
 
                 shutil.copy(src=path, dst=qr_path)
-                cnt += 1
+                file_number += 1
                 continue
             else:
                 # QRCodeが見つからずに日付が変わった場合
                 # おそらくQRCodeの撮り忘れなので、日付の名前のフォルダを作成
-                target_dir = TARGET_DIR / date_to_str(date)
+                target_dir = TARGET_DIR / (date_to_str(date) + "unknown")
 
-            target_dir.mkdir(exist_ok=True)
+        target_dir.mkdir(exist_ok=True)
 
-        img_path: Path = target_dir / f"{date_to_str(date)}-{cnt:02d}.jpg"
+        img_path: Path = target_dir / \
+            f"{date_to_str(date)}-{file_number:02d}.jpg"
 
         while img_path.exists():
             print(
                 f"you may run this program twice:\n{img_path} is already exists", file=sys.stderr)
-            cnt += 1
-            img_path = img_path.parent / f"{date_to_str(date)}-{cnt:02d}.jpg"
+            file_number += 1
+            img_path = img_path.parent / \
+                f"{date_to_str(date)}-{file_number:02d}.jpg"
         shutil.copy(src=path, dst=img_path)
-        cnt += 1
+        file_number += 1
     os.chdir(TARGET_DIR)
     res = subprocess.run("tree", capture_output=True, text=True)
     print(res.stdout, file=sys.stderr)
