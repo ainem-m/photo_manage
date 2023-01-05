@@ -1,7 +1,7 @@
 from datetime import datetime
 import os
 import subprocess
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Generator
 import shutil
 import sys
 from pathlib import Path
@@ -34,9 +34,12 @@ def main():
 
     # ---
     # ファイルリストの取得
-    jpg_filelist: List[str] = ROOT_DIR.glob("*.jp?g")
-    if not jpg_filelist:
-        raise FileNotFoundError("no files found")
+    jpg_filelist: Generator[Path, None, None] = ROOT_DIR.glob("*.jp?g")
+    if next(jpg_filelist, None) is None:
+        # 画像ファイルが見つからなかったとき
+        jpg_filelist = ROOT_DIR.glob("*.JPG")
+        if next(jpg_filelist, None) is None:
+            raise FileNotFoundError("no files found")
 
     # 日付順にソート
     sorted_filelist: List[Tuple[Path, datetime]] = sorted(
