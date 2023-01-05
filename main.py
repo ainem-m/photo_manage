@@ -52,18 +52,8 @@ def main():
         # QRCodeが見つかったらフォルダを作成
         if folder_name or i == 0 or date.day != current_day:
             current_day = date.day
-            target_dir: Path = TARGET_DIR
-            if not folder_name or not folder_name.isdigit():
-                # QRCodeが見つからずに日付が変わった場合
-                # おそらくQRCodeの撮り忘れなので、日付の名前のフォルダを作成
-                # QRCodeの読み込み結果が数字ではない場合も同様
-                target_dir = TARGET_DIR / date_to_str(date)
-            else:
-                target_dir /= folder_name
-
-            target_dir.mkdir(exist_ok=True)
-
             if folder_name:
+                target_dir = TARGET_DIR / folder_name
                 # QRCodeの画像は避難
                 qr_path: Path = TARGET_DIR / "qr" / \
                     f"{date_to_str(date)}-{cnt:02d}.jpg"
@@ -77,6 +67,12 @@ def main():
                 shutil.copy(src=path, dst=qr_path)
                 cnt += 1
                 continue
+            else:
+                # QRCodeが見つからずに日付が変わった場合
+                # おそらくQRCodeの撮り忘れなので、日付の名前のフォルダを作成
+                target_dir = TARGET_DIR / date_to_str(date)
+
+            target_dir.mkdir(exist_ok=True)
 
         img_path: Path = target_dir / f"{date_to_str(date)}-{cnt:02d}.jpg"
 
