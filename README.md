@@ -118,17 +118,17 @@ def resize(img: cv2.Mat, size: int = 1024, debug: bool = False) -> cv2.Mat:
 ```
 
 
-#### フォルダ作成
+#### ~~os.mkdirでフォルダ作成~~
 [Pythonでディレクトリ（フォルダ）を作成するmkdir, makedirs | note.nkmk.me](https://note.nkmk.me/python-os-mkdir-makedirs/)
-`subprocess.run()`で行うより、`os.mkdir()`の方がエラーハンドリングしやすそう
-```python
-try:
-    os.mkdir(target_dir)
-except FileExistsError:
-    # 既に同名のフォルダが存在していたら何もしない
-    pass
-```
 
+#### pathlibでフォルダ作成
+[Python, pathlibでディレクトリ（フォルダ）の作成・削除 | note.nkmk.me](https://note.nkmk.me/python-pathlib-mkdir-rmdir/)
+pathlibの方が使いやすかった
+既にフォルダが存在しているときにエラーを出さない
+`exist_ok`という引数が存在する
+```python
+target_dir.mkdir(exist_ok=True)
+```
 #### ファイルの移動
 [Pythonでファイル・ディレクトリを移動するshutil.move | note.nkmk.me](https://note.nkmk.me/python-shutil-move/)
 

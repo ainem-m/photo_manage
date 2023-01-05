@@ -28,11 +28,9 @@ def date_to_str(date: datetime) -> str:
 def main():
     ROOT_DIR: Path = Path(STR_ROOT_DIR)
     TARGET_DIR: Path = Path(STR_TARGET_DIR)
+    assert ROOT_DIR.exists() and TARGET_DIR.exists()
 
-    try:
-        os.mkdir(TARGET_DIR / "qr")
-    except FileExistsError:
-        pass
+    (TARGET_DIR / "qr").mkdir(exist_ok=True)
 
     # ---
     # ファイルリストの取得
@@ -62,11 +60,9 @@ def main():
                 target_dir = TARGET_DIR / date_to_str(date)
             else:
                 target_dir /= folder_name
-            try:
-                os.mkdir(target_dir)
-            except FileExistsError:
-                # 既に同名のフォルダが存在していたら何もしない
-                pass
+
+            target_dir.mkdir(exist_ok=True)
+
             if folder_name:
                 # QRCodeの画像は避難
                 qr_path: Path = TARGET_DIR / "qr" / \
