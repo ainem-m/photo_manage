@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import subprocess
 from typing import List, Tuple, Optional, Generator
 import shutil
@@ -47,15 +47,14 @@ def main():
     sorted_filelist: List[Tuple[Path, datetime]] = sorted(
         ((path, get_date(path)) for path in jpg_filelist), key=lambda x: x[1])
 
-    current_time = sorted_filelist[0][1]
+    current_time: datetime = sorted_filelist[0][1]
     target_dir: str = TARGET_DIR
-    current_day: datetime.day = current_time.day
     cnt: int = 0
 
     for i, (path, date) in enumerate(sorted_filelist):
         folder_name: Optional[str] = decode.decode(path)
         if folder_name:
-            current_day = date.day
+            current_time = date
             # QRCodeが見つかったらフォルダを作成
             target_dir = TARGET_DIR / folder_name
             target_dir.mkdir(exist_ok=True)
@@ -64,8 +63,8 @@ def main():
             shutil.copy(src=path, dst=qr_path)
             cnt += 1
             continue
-        if i == 0 or date.day != current_day:
-            current_day = date.day
+        if i == 0 or date - current_time > timedelta(hours=settings.TIME_THRESHOLD):
+            current_time = date
             # QRCodeが見つからずに日付が変わった場合
             # おそらくQRCodeの撮り忘れなので、日付の名前のフォルダを作成
             target_dir = TARGET_DIR / (date_to_str(date) + "unknown")
@@ -75,8 +74,8 @@ def main():
         img_path, cnt = make_filepath(target_dir, date, cnt)
         shutil.copy(src=path, dst=img_path)
         cnt += 1
-    subprocess.run(f"chdir {TARGET_DIR}")
-    res = subprocess.run("tree", capture_output=True, text=True)
+    res = subprocess.run("tree", capture_output=True,
+                         text=True, cwd=TARGET_DIR)
     print(res.stdout, file=sys.stderr)
 
 
