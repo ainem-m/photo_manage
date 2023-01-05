@@ -46,38 +46,29 @@
 このようにファイルが振り分けられる。
 
 > TODO: 振り分け先を工夫して患者情報管理システムとリンクさせる？
-> 
+
 ## 実装
 #### ファイルリストの取得
 ちょっと冗長な気もするが、まずファイルリストを取得してから、それぞれのファイルの作成日時を取得してソートする
 
-##### globでjpgファイルのリストを取得
-[ディレクトリ内のファイルリストを取得する – Pythonプログラミング物語](https://pcl.solima.net/pyblog/archives/512)
-```Python
-# 振り分ける対象のフォルダ
-ROOT_DIR: str = "/photo_manage/sample/"
-# 振り分け先のフォルダ
-TARGET_DIR: str = "/photo_manage/sample2/"
-try:
-    os.mkdir(TARGET_DIR + "qr")
-except FileExistsError:
-    pass
+##### ~~globでjpgファイルのリストを取得~~
 
-# ---
-# ファイルリストの取得
-os.chdir(ROOT_DIR)
-jpg_filelist: List[str] = glob.glob("*.jpg")
+##### pathlibでjpgファイルのリストを取得
+[Python, pathlibでファイル一覧を取得（glob, iterdir） | note.nkmk.me](https://note.nkmk.me/python-pathlib-iterdir-glob/)
+```python
+ROOT_DIR = Path("/sample/")
+jpg_filelist: List[str] = ROOT_DIR.glob("*.jp?g")
 if not jpg_filelist:
     raise FileNotFoundError("no files found")
-
 ```
 
 ##### ファイルから更新日時を取得し、ソート
 [Pythonでファイルの作成・更新日時を取得する（os.path.getmtimeなど）：作成日時の取得はOSごとに変わるので注意 - MathPython](https://www.mathpython.com/file-date)
 *振り分け先が同じなのに日付が違う場合、バーコードの撮り忘れの可能性があるので、日付順の管理にする*
 ```python
-# 日付順にソート
-sorted_filelist: List[Tuple[str, datetime.datetime]] = sorted(
+def get_date(path: Path) -> datetime:
+    return datetime.fromtimestamp(path.stat().st_atime)
+sorted_filelist: List[Tuple[Path, datetime]] = sorted(
     ((path, get_date(path)) for path in jpg_filelist), key=lambda x: x[1])
 ```
 
@@ -86,14 +77,44 @@ sorted_filelist: List[Tuple[str, datetime.datetime]] = sorted(
 [Python, OpenCVでQRコードを検出・読み取り | note.nkmk.me](https://note.nkmk.me/python-opencv-qrcode/)
 ```python
 import cv2
-def decode(path: str) -> Optional[str]:
-    img = cv2.imread(path)
+from typing import Optional
+import pathlib
+
+
+def resize(img: cv2.Mat, size: int = 1024, debug: bool = False) -> cv2.Mat:
+    h, w = img.shape[:2]
+    if debug:
+        print("before: ", h, w)
+    if w > h:
+        ratio: float = size/w
+        w = size
+        h = int(h*ratio)
+    else:
+        ratio: float = size/h
+        w = int(w*ratio)
+        h = size
+    if debug:
+        print("resize: ", h, w)
+    return cv2.resize(img, dsize=(w, h))
+
+
+def decode(path: pathlib.Path, debug=False) -> Optional[str]:
+    img = cv2.imread(str(path))
+    # 画像サイズが大きいと読み取りがうまく行かないので
+    # アスペクト比を保ったまま長辺が1024になるように縮小
+    img = resize(img, debug=debug)
+    if debug:
+        cv2.imshow("", img)
+        cv2.waitKey()
     qcd = cv2.QRCodeDetector()
-    # retval(読み込み結果)のみ必要で、他の返り値は使わないため_で受け取る
     retval, _, _ = qcd.detectAndDecode(img)
     if retval:
         return retval
-    return None
+    else:
+        img = resize(img, 512, debug=debug)
+        retval, _, _ = qcd.detectAndDecode(img)
+        return retval
+
 ```
 
 #### フォルダ作成
@@ -107,7 +128,6 @@ except FileExistsError:
     pass
 ```
 
-
 #### ファイルの移動
 [Pythonでファイル・ディレクトリを移動するshutil.move | note.nkmk.me](https://note.nkmk.me/python-shutil-move/)
 
@@ -116,4 +136,10 @@ except FileExistsError:
 逆にめんどくさいか？
 
 #### treeの結果を表示
-標準エラー出力に、移動先フォルダの`tree`の結果を表示する。でも結構大きな出力になるからいらないかも。
+標準エラー出力に、移動先フォルダの`tree`の結果を表示する。~~でも結構大きな出力になるからいらないかも。~~ デバッグに重宝する。
+`subprocess.run()`の実行結果をテキストで受け取り、標準エラーに出力。
+```python
+os.chdir(TARGET_DIR)
+res = subprocess.run("tree", capture_output=True, text=True)
+print(res.stdout, file=sys.stderr)
+```
