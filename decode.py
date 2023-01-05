@@ -34,7 +34,10 @@ def decode(path: pathlib.Path, debug=False) -> Optional[str]:
         return retval
     else:
         img = resize(img, 512, debug=debug)
-        retval, _, _ = qcd.detectAndDecode(img)
+        try:
+            retval, _, _ = qcd.detectAndDecode(img)
+        except cv2.error:
+            return None
         return retval
 
 
