@@ -76,28 +76,6 @@ sorted_filelist: List[Tuple[Path, datetime]] = sorted(
 画像からQRコード認識
 [Python, OpenCVでQRコードを検出・読み取り | note.nkmk.me](https://note.nkmk.me/python-opencv-qrcode/)
 ```python
-import cv2
-from typing import Optional
-import pathlib
-
-
-def resize(img: cv2.Mat, size: int = 1024, debug: bool = False) -> cv2.Mat:
-    h, w = img.shape[:2]
-    if debug:
-        print("before: ", h, w)
-    if w > h:
-        ratio: float = size/w
-        w = size
-        h = int(h*ratio)
-    else:
-        ratio: float = size/h
-        w = int(w*ratio)
-        h = size
-    if debug:
-        print("resize: ", h, w)
-    return cv2.resize(img, dsize=(w, h))
-
-
 def decode(path: pathlib.Path, debug=False) -> Optional[str]:
     img = cv2.imread(str(path))
     # 画像サイズが大きいと読み取りがうまく行かないので
@@ -114,8 +92,31 @@ def decode(path: pathlib.Path, debug=False) -> Optional[str]:
         img = resize(img, 512, debug=debug)
         retval, _, _ = qcd.detectAndDecode(img)
         return retval
-
 ```
+
+画像サイズが大きい場合うまく読み取れないことがわかったので前処置としてリサイズをするようにした
+[OpenCV - resize で画像をリサイズする方法 - pystyle](https://pystyle.info/opencv-resize/)
+
+`img.shape[:2]`で受け取るときは`h, w`の順番なのに`cv2.resize()`にわたすときは`w, h`の順番なの、意地悪だなって思った
+
+```python
+def resize(img: cv2.Mat, size: int = 1024, debug: bool = False) -> cv2.Mat:
+    h, w = img.shape[:2]
+    if debug:
+        print("before: ", h, w)
+    if w > h:
+        ratio: float = size/w
+        w = size
+        h = int(h*ratio)
+    else:
+        ratio: float = size/h
+        w = int(w*ratio)
+        h = size
+    if debug:
+        print("resize: ", h, w)
+    return cv2.resize(img, dsize=(w, h))
+```
+
 
 #### フォルダ作成
 [Pythonでディレクトリ（フォルダ）を作成するmkdir, makedirs | note.nkmk.me](https://note.nkmk.me/python-os-mkdir-makedirs/)
