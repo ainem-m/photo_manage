@@ -46,6 +46,7 @@
 このようにファイルが振り分けられる。
 
 > TODO: 振り分け先を工夫して患者情報管理システムとリンクさせる？
+> 追記：難しそう（生のファイルで画像管理されているが、対応する保存先にエクスプローラからファイルを追加しても見れなかった）
 
 ## 実装
 #### ファイルリストの取得
@@ -64,10 +65,10 @@ if not jpg_filelist:
 
 ##### ファイルから更新日時を取得し、ソート
 [Pythonでファイルの作成・更新日時を取得する（os.path.getmtimeなど）：作成日時の取得はOSごとに変わるので注意 - MathPython](https://www.mathpython.com/file-date)
-*振り分け先が同じなのに日付が違う場合、バーコードの撮り忘れの可能性があるので、日付順の管理にする*
+同じ被写体を何時間も撮り続けることはあまりないので、一定時間経過していたらQRCodeの撮り忘れと判断し違うフォルダに振り分けるようにした
 ```python
 def get_date(path: Path) -> datetime:
-    return datetime.fromtimestamp(path.stat().st_atime)
+    return datetime.fromtimestamp(path.stat().st_mtime)
 sorted_filelist: List[Tuple[Path, datetime]] = sorted(
     ((path, get_date(path)) for path in jpg_filelist), key=lambda x: x[1])
 ```
@@ -138,9 +139,11 @@ target_dir.mkdir(exist_ok=True)
 
 #### treeの結果を表示
 標準エラー出力に、移動先フォルダの`tree`の結果を表示する。~~でも結構大きな出力になるからいらないかも。~~ デバッグに重宝する。
-`subprocess.run()`の実行結果をテキストで受け取り、標準エラーに出力。
+`subprocess.run()`の実行結果をテキストで受け取り、標準エラーに出力。  
+`subprocess.run()`の`cwd`(current working directory)オプションで実行するディレクトリを指定できる
+
 ```python
-os.chdir(TARGET_DIR)
-res = subprocess.run("tree", capture_output=True, text=True)
+res = subprocess.run("tree", capture_output=True,
+                        text=True, cwd=TARGET_DIR)
 print(res.stdout, file=sys.stderr)
 ```
